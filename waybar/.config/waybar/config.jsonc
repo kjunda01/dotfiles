@@ -2,39 +2,72 @@
   "position": "top",
   "modules-left": ["hyprland/workspaces"],
   "modules-center": ["hyprland/window"],
-  "modules-right": ["network", "pulseaudio", "battery", "clock"],
+  "modules-right": ["network", "bluetooth", "pulseaudio", "battery", "tray", "clock"],
+  
   "clock": {
-    "format": "<span foreground='#f5c2e7'>   </span>{:%a %d %H:%M}",
-    "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+    "format": "<span size='11000' foreground='#f5c2e7'>  </span>{:%A, %d %b %H:%M}",
+    "interval": 1,
+    "tooltip-format": "<big>{:%Y %B %d}</big>\n<tt>{calendar}</tt>",
+    "calendar": {
+      "format": {
+        "months": "<span color='#f5c2e7'><b>{}</b></span>",
+        "days": "<span color='#94e2d5'>{}</span>",
+        "weeks": "<span color='#eba0ac'>W{}</span>"
+      }
+    }
   },
+  
   "battery": {
     "states": {
+      "good": 80,
       "warning": 30,
       "critical": 15
     },
-    "format": "<span size='13000' foreground='#a6e3a1'>{icon} </span> {capacity}%",
-    "format-warning": "<span size='13000' foreground='#B1E3AD'>{icon} </span> {capacity}%",
-    "format-critical": "<span size='13000' foreground='#E38C8F'>{icon} </span> {capacity}%",
-    "format-charging": "<span size='13000' foreground='#B1E3AD'> </span>{capacity}%",
-    "format-plugged": "<span size='13000' foreground='#B1E3AD'> </span>{capacity}%",
-    "format-alt": "<span size='13000' foreground='#B1E3AD'>{icon} </span> {time}",
-    "format-full": "<span size='13000' foreground='#B1E3AD'> </span>{capacity}%",
+    "format": "<span size='11000' foreground='#a6e3a1'>{icon}  </span>{capacity}% {time}",
+    "format-warning": "<span size='11000' foreground='#f9e2af'>{icon}  </span>{capacity}% {time}",
+    "format-critical": "<span size='11000' foreground='#f38ba8'>{icon}  </span>{capacity}% {time}",
+    "format-charging": "<span size='11000' foreground='#89b4fa'>  </span>{capacity}% {time}",
+    "format-plugged": "<span size='11000' foreground='#89b4fa'>  </span>{capacity}%",
+    "format-full": "<span size='11000' foreground='#a6e3a1'>  </span>Full",
     "format-icons": ["", "", "", "", ""],
-    "tooltip-format": "{time}"
+    "tooltip-format": "{capacity}% - {timeTo} ({power}W)"
   },
+  
   "network": {
-    "format-wifi": "<span size='13000' foreground='#f5e0dc'>  </span>{essid}",
-    "format-ethernet": "<span size='13000' foreground='#f5e0dc'>󰤭  </span> Disconnected",
-    "format-linked": "{ifname} (No IP) ",
-    "format-disconnected": "<span size='13000' foreground='#f5e0dc'>  </span>Disconnected",
-    "tooltip-format-wifi": "Signal Strenght: {signalStrength}%"
+    "family": "ipv4", // Restringe a IPv4
+    "interface": "enp6s0", // Substitua por sua interface de rede (ex.: eth0, wlp2s0)
+    "format-wifi": "<span size='11000' foreground='#f5e0dc'>  </span>{essid} ({signalStrength}%)",
+    "format-ethernet": "<span size='11000' foreground='#f5e0dc'>󰈀  </span>{ipaddr}", // Mostra apenas IPv4 local
+    "format-disconnected": "<span size='11000' foreground='#f5e0dc'>  </span>Disconnected",
+    "tooltip-format": "IPv4: {ipaddr}"
   },
+  
   "pulseaudio": {
-      "format": "{icon}  {volume}%",
-      "format-muted": "",
-      "format-icons": {
-          "default": ["", "", " "]
-      },
-      "on-click": "pavucontrol"
+    "format": "<span size='11000' foreground='#fab387'>{icon}  </span>{volume}% {format_source}",
+    "format-muted": "<span size='11000' foreground='#f38ba8'>  </span>Muted",
+    "format-source": "<span size='11000' foreground='#89dceb'>  </span>{volume}%",
+    "format-source-muted": "<span size='11000' foreground='#f38ba8'>  </span>Muted",
+    "format-icons": {
+      "default": ["", "", ""]
+    },
+    "on-click": "pavucontrol",
+    "on-click-right": "amixer sset Master toggle"
+  },
+  
+  "hyprland/window": {
+    "format": "{}",
+    "max-length": 50
+  },
+  
+  "bluetooth": {
+    "format": "<span size='11000' foreground='#89b4fa'>  </span>{status}", // Bluetooth ligado/desligado
+    "format-connected": "<span size='11000' foreground='#89b4fa'>  </span>{device_alias}", // Nome do dispositivo
+    "format-disabled": "<span size='11000' foreground='#f38ba8'>  </span>Off",
+    "tooltip-format": "Status: {status}\nDevice: {device_alias}",
+    "on-click": "bluetoothctl" // Abre gerenciador de Bluetooth
+  },
+  
+  "tray": {
+    "spacing": 8 // Reduzido para combinar com ícones menores
   }
 }
