@@ -22,6 +22,8 @@ PACOTES=(
   wget
   openssh
   base-devel
+  nautilus
+  kitty
 )
 
 # Instala pacotes via pacman, verificando antes se já estão instalados
