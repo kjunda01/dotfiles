@@ -1,5 +1,5 @@
 echo "Instalando blueooth com bluez e bluez-utils"
-pacman -Sy bluez bluez-utils
+pacman -Sy bluez bluez-utils blueman-manager
 
 echo "Ligando btusb"
 modprobe btusb
