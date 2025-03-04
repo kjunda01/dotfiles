@@ -18,12 +18,11 @@ set $mod Mod4
 exec --no-startup-id xrandr --output DVI-D-0 --primary --pos 0x0 --output HDMI-A-1 --pos 1920x0
 
 # seta os wallpapers
-exec --no-startup-id ~/.config/scripts/set_random_wallpaper.sh
+exec --no-startup-id ~/.config/scripts/set_random_wallpaper.sh &
 bindsym $mod+Shift+w exec --no-startup-id ~/.config/scripts/set_random_wallpaper.sh
 
 # inicia apps sozinhos
 exec --no-startup-id picom
-exec --no-startup-id feh --bg-scale ~/.config/backgrounds/nice-blue-background.png
 exec --no-startup-id xrdb -merge ~/.Xresources
 
 # kill any hanging polybar processes
