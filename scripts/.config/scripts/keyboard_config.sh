@@ -1,5 +1,6 @@
 #!/bin/bash
-echo "Executando script de teclado em $(date)" > ~/keyboard_log.txt
+# Aguarda 5 segundos antes de prosseguir
+sleep 5 &
 
 # Forçar o ambiente do X
 [ -z "$DISPLAY" ] && export DISPLAY=:0
