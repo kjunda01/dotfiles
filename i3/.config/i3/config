@@ -334,3 +334,7 @@ bindsym $mod+v exec --no-startup-id copyq & copyq menu
 
 # seta o script para adicionar o resize na polybar
 exec_always --no-startup-id sleep 3 ; pkill -f "i3_mode_monitor.sh" ; ~/.config/scripts/i3_mode_monitor.sh &
+
+# seta os temas para dark
+exec_always --no-startup-id export GTK_THEME=Adwaita:dark
+exec_always --no-startup-id export QT_STYLE_OVERRIDE=Adwaita-Dark
