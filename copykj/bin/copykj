@@ -16,7 +16,21 @@ fi
 # Atribui os argumentos a variáveis
 ORIGEM="$1"
 DESTINO="$2"
-DESTINO_ARQUIVO="$DESTINO/$(basename "$ORIGEM")"
+
+# Verifica se o arquivo de origem existe
+if [ ! -f "$ORIGEM" ]; then
+    echo_color "31" "Erro: O arquivo de origem '$ORIGEM' não existe ou não é um arquivo regular."
+    exit 1
+fi
+
+# Determina o caminho do arquivo de destino
+if [ -d "$DESTINO" ]; then
+    # Se o destino é um diretório, adiciona o nome do arquivo de origem
+    DESTINO_ARQUIVO="$DESTINO/$(basename "$ORIGEM")"
+else
+    # Se o destino não é um diretório, usa o caminho especificado diretamente
+    DESTINO_ARQUIVO="$DESTINO"
+fi
 
 # Verifica se o arquivo de destino já existe
 if [ -e "$DESTINO_ARQUIVO" ]; then
