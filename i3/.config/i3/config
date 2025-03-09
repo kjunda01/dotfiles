@@ -338,3 +338,6 @@ exec_always --no-startup-id sleep 3 ; pkill -f "i3_mode_monitor.sh" ; ~/.config/
 # seta os temas para dark
 exec_always --no-startup-id export GTK_THEME=Adwaita:dark
 exec_always --no-startup-id export QT_STYLE_OVERRIDE=Adwaita-Dark
+
+# executa o script para notificacao de login
+exec --no-startup-id /home/kjunda01/start_get_infos.sh &
