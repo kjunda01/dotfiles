@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Aguarda 5 segundos antes de prosseguir
-sleep 5 &
+#sleep 5 &
 
 # Diretório onde os wallpapers estão armazenados
 WALLPAPER_DIR="$HOME/.config/backgrounds/"
