@@ -1,0 +1,21 @@
+[global]
+    monitor = 0
+    follow = mouse
+    geometry = "300x5-10+30"
+    transparency = 0
+    notification_limit = 5
+
+[urgency_low]
+    background = "#282828"
+    foreground = "#ebdbb2"
+    timeout = 5000
+
+[urgency_normal]
+    background = "#282828"
+    foreground = "#ebdbb2"
+    timeout = 5000
+
+[urgency_critical]
+    background = "#cc241d"
+    foreground = "#fbf1c7"
+    timeout = 0
