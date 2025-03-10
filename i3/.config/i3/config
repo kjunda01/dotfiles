@@ -260,4 +260,4 @@ exec_always --no-startup-id export GTK_THEME=Adwaita:dark
 exec_always --no-startup-id export QT_STYLE_OVERRIDE=Adwaita-Dark
 
 # executa o script para notificacao de login
-exec --no-startup-id /home/kjunda01/start_get_infos.sh &
+exec --no-startup-id sh -c "sleep 30 && . /mnt/disco1/ambiente/bin/activate && python3 /mnt/disco1/getInfos.py"
