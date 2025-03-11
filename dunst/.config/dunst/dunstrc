@@ -1,21 +1,43 @@
 [global]
-    monitor = 0
-    follow = mouse
-    geometry = "300x5-10+30"
-    transparency = 0
-    notification_limit = 5
+monitor = 0
+follow = mouse
+geometry = "300x5-10+30"
+transparency = 0
+notification_limit = 5
+separator_height = 0
+padding = 20
+frame_width = 0
+sort = yes
+idle_threshold = 120
+
+# Cores globais
+background = #1e1e2e  # Base
+foreground = #cdd6f4  # Text
 
 [urgency_low]
-    background = "#282828"
-    foreground = "#ebdbb2"
-    timeout = 5000
+background = #313244  # Surface0
+foreground = #a6adc8  # Subtext0
+timeout = 5000
+format = "<b>%s</b>\n%b"
 
 [urgency_normal]
-    background = "#282828"
-    foreground = "#ebdbb2"
-    timeout = 5000
+background = #45475a  # Surface1
+foreground = #cba6f7  # Mauve
+timeout = 5000
+format = "<b>%s</b>\n%b"
 
 [urgency_critical]
-    background = "#cc241d"
-    foreground = "#fbf1c7"
-    timeout = 0
+background = #f38ba8  # Red
+foreground = #1e1e2e  # Base (texto escuro)
+timeout = 0
+format = "<b>%s</b>\n%b"
+
+# Estilos de borda
+corner_radius = 10
+border_width = 0
+
+# Animações
+skip_urgency_animation = no
+animation = fade
+fade_in = 0.3
+fade_out = 0.3

@@ -1,5 +1,8 @@
 for_window [class="^.*"] border pixel 1
 
+# inicia o agente de autenticação (polkit-gnome)
+exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
+
 # Define windows ou alt como tecla MOD
 set $mod Mod4
 # set $mod Mod1
