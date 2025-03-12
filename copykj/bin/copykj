@@ -15,9 +15,7 @@ fi
 
 # O último argumento é o destino
 DESTINO="${@: -1}"
-
-# Remove a barra final do destino, se existir
-DESTINO=$(echo "$DESTINO" | sed 's|/+$||')
+DESTINO="${DESTINO%/}"  # Remove barra final
 
 # Verifica se o destino é um diretório
 if [ ! -d "$DESTINO" ]; then
@@ -25,151 +23,107 @@ if [ ! -d "$DESTINO" ]; then
     exit 1
 fi
 
-# Verifica se o comando dd está disponível no sistema
-if ! command -v dd &> /dev/null; then
-    echo_color "31" "Erro: O comando 'dd' não está instalado. Instale-o e tente novamente."
-    exit 1
-fi
+# Verifica se os comandos necessários estão instalados
+for cmd in dd numfmt; do
+    if ! command -v $cmd &> /dev/null; then
+        echo_color "31" "Erro: O comando '$cmd' não está instalado. Instale-o e tente novamente."
+        exit 1
+    fi
+done
 
-# Função para verificar permissões de leitura e escrita
-check_permissions() {
-    local FILE="$1"
-    if [ ! -r "$FILE" ]; then
-        echo_color "31" "Erro: Não tem permissão de leitura para '$FILE'."
-        return 1
+# Função para copiar arquivos ou diretórios recursivamente
+copy_item() {
+    local ORIGEM="$1"
+    local DESTINO_DIR="$2"
+    ORIGEM="${ORIGEM%/}"  # Remove barra final
+    
+    if [ -d "$ORIGEM" ]; then
+        echo_color "34" "Copiando diretório '$ORIGEM'..."
+        find "$ORIGEM" -type f | while read -r file; do
+            copy_file "$file" "$DESTINO_DIR"
+        done
+    elif [ -f "$ORIGEM" ]; then
+        copy_file "$ORIGEM" "$DESTINO_DIR"
+    else
+        echo_color "31" "Erro: '$ORIGEM' não existe."
     fi
-    if [ ! -w "$FILE" ]; then
-        echo_color "31" "Erro: Não tem permissão de escrita para '$FILE'."
-        return 1
-    fi
-    return 0
 }
 
-# Função para copiar um único arquivo
-copy_single_file() {
+# Função para copiar um único arquivo com barra de progresso
+copy_file() {
     local ORIGEM="$1"
     local DESTINO_DIR="$2"
     local DESTINO_ARQUIVO="$DESTINO_DIR/$(basename "$ORIGEM")"
-
-    # Remove a barra final da origem, se existir
-    ORIGEM=$(echo "$ORIGEM" | sed 's|/+$||')
-
-    # Verifica se o arquivo de origem existe
-    if [ ! -f "$ORIGEM" ]; then
-        echo_color "31" "Erro: O arquivo de origem '$ORIGEM' não existe ou não é um arquivo regular."
-        return 1
+    
+    if [ ! -w "$DESTINO_DIR" ]; then
+        echo_color "31" "Erro: Sem permissão para escrever em '$DESTINO_DIR'. Tente executar como root."
+        exit 1
     fi
-
-    # Verifica as permissões de leitura na origem
-    if ! check_permissions "$ORIGEM"; then
-        return 1
-    fi
-
-    # Verifica as permissões de escrita no destino
-    if ! check_permissions "$DESTINO_DIR"; then
-        return 1
-    fi
-
-    # Verifica se o arquivo de destino já existe
+    
     if [ -e "$DESTINO_ARQUIVO" ]; then
         echo_color "33" "Atenção: O arquivo '$DESTINO_ARQUIVO' já existe!"
         echo -n "Deseja sobrescrevê-lo? (y/N): "
         read -r resposta
         case "$resposta" in
-            [Yy]*)
-                echo_color "33" "Sobrescrevendo o arquivo existente..."
-                ;;
-            *)
-                echo_color "31" "Cópia de '$ORIGEM' cancelada."
-                return 1
-                ;;
+            [Yy]*) echo_color "33" "Sobrescrevendo..." ;;
+            *) echo_color "31" "Cópia cancelada."; return 1 ;;
         esac
     fi
-
-    # Obtém o tamanho do arquivo de origem
-    TAMANHO=$(du -b "$ORIGEM" | cut -f1)  # Tamanho em bytes
-    TAMANHO_HUMANO=$(du -h "$ORIGEM" | cut -f1)  # Tamanho em formato legível
-
-    # Exibe informações sobre a cópia
-    echo_color "32" "=== Iniciando Cópia de '$ORIGEM' ==="
-    echo_color "34" "Origem: $ORIGEM"
-    echo_color "34" "Destino: $DESTINO_ARQUIVO"
-    echo_color "34" "Tamanho: $TAMANHO_HUMANO"
-    echo_color "32" "====================="
-
-    # Variáveis para controle de progresso
+    
+    TAMANHO=$(stat --format="%s" "$ORIGEM")
+    TAMANHO_HUMANO=$(numfmt --to=iec-i --suffix=B $TAMANHO)
+    echo_color "32" "Copiando '$ORIGEM' ($TAMANHO_HUMANO)..."
+    
     START_TIME=$(date +%s)
     BYTES_COPIED=0
-
-    # Executa o comando dd e redireciona a saída para um arquivo temporário
-    {
-        sudo dd if="$ORIGEM" of="$DESTINO_ARQUIVO" bs=4M oflag=direct status=none
-    } 2>&1 | while IFS= read -r line; do
-        echo_color "36" "$line"
-    done &
-
-    # Captura o PID do dd
+    
+    sudo dd if="$ORIGEM" of="$DESTINO_ARQUIVO" bs=4M oflag=direct status=none &
     DD_PID=$!
-
-    # Exibe o progresso enquanto o dd está em execução
+    
     while kill -0 $DD_PID 2>/dev/null; do
         sleep 1
-        BYTES_COPIED=$(du -b "$DESTINO_ARQUIVO" | cut -f1)  # Tamanho copiado em bytes
-        PERCENTAGE=$(( BYTES_COPIED * 100 / TAMANHO ))  # Porcentagem
-        ELAPSED_TIME=$(( $(date +%s) - START_TIME ))  # Tempo decorrido em segundos
-
-        # Calcula a velocidade de escrita
+        BYTES_COPIED=$(stat --format="%s" "$DESTINO_ARQUIVO" 2>/dev/null || echo 0)
+        PERCENTAGE=$(( BYTES_COPIED * 100 / TAMANHO ))
+        ELAPSED_TIME=$(( $(date +%s) - START_TIME ))
+        
         if [ $ELAPSED_TIME -gt 0 ]; then
-            SPEED=$(( BYTES_COPIED / ELAPSED_TIME ))  # Velocidade em bytes por segundo
-            SPEED_HUMANO=$(numfmt --to=iec-i --suffix=B $SPEED)  # Formato legível
+            SPEED=$(( BYTES_COPIED / ELAPSED_TIME ))
+            SPEED_HUMANO=$(numfmt --to=iec-i --suffix=B $SPEED)
         else
             SPEED_HUMANO="0B/s"
         fi
-
-        # Formata o tamanho copiado em formato legível
+        
         COPIED_HUMANO=$(numfmt --to=iec-i --suffix=B $BYTES_COPIED)
-
-        # Define a cor da barra de progresso com base na porcentagem (invertida)
+        
         if [ $PERCENTAGE -le 25 ]; then
-            COLOR="31"  # Vermelho (escuro)
+            COLOR="31"
         elif [ $PERCENTAGE -le 50 ]; then
-            COLOR="35"  # Magenta
+            COLOR="35"
         elif [ $PERCENTAGE -le 75 ]; then
-            COLOR="33"  # Amarelo
+            COLOR="33"
         else
-            COLOR="32"  # Verde (claro, para 100%)
+            COLOR="32"
         fi
-
-        # Cria a barra de progresso
+        
         BAR_LENGTH=50
         FILLED_LENGTH=$(( BAR_LENGTH * PERCENTAGE / 100 ))
         UNFILLED_LENGTH=$(( BAR_LENGTH - FILLED_LENGTH ))
         PROGRESS_BAR=$(printf "%${FILLED_LENGTH}s" | tr ' ' '#')
         PROGRESS_BAR+=$(printf "%${UNFILLED_LENGTH}s" | tr ' ' '-')
-
+        
         echo -ne "Progresso: $COPIED_HUMANO / $TAMANHO_HUMANO - $PERCENTAGE% - $SPEED_HUMANO - [\e[${COLOR}m$PROGRESS_BAR\e[0m]\r"
     done
-
-    # Aguarda a conclusão do dd
+    
     wait $DD_PID
-
-    # Exibe mensagem de conclusão
+    ELAPSED_TIME=$(( $(date +%s) - START_TIME ))
     echo -e "\n====================="
-    echo_color "32" "Cópia concluída com sucesso!"
-
-    # Verifica a integridade
-    if cmp -s "$ORIGEM" "$DESTINO_ARQUIVO"; then
-        echo_color "32" "Verificação OK: Arquivos idênticos"
-    else
-        echo_color "31" "Verificação falhou: Arquivos diferentes"
-    fi
+    echo_color "32" "Cópia concluída em ${ELAPSED_TIME}s!"
 }
 
 # Itera sobre todos os argumentos, exceto o último (destino)
 for ((i=1; i<$#; i++)); do
     ORIGEM="${!i}"
-    ORIGEM=$(echo "$ORIGEM" | sed 's|/+$||')  # Remove barras finais da origem
-    copy_single_file "$ORIGEM" "$DESTINO"
+    copy_item "$ORIGEM" "$DESTINO"
 done
 
 echo_color "32" "Todas as cópias foram concluídas."
