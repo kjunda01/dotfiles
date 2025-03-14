@@ -1,0 +1,7 @@
+set autoindent      # Mantém a indentação automática
+set tabsize 4       # Define o tamanho do Tab como 4 espaços
+set mouse           # Habilita suporte ao mouse
+set linenumbers     # Mostra números das linhas
+set softwrap        # Quebra de linha suave
+set constantshow    # Mostra a posição do cursor sempre
+include "~/.nano/*.nanorc"
