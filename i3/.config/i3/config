@@ -11,7 +11,7 @@ set $mod Mod4
 exec --no-startup-id xrandr --output DVI-D-0 --primary --pos 0x0 --output HDMI-A-1 --pos 1920x0
 
 # seta os wallpapers
-exec --no-startup-id ~/.config/scripts/set_random_wallpaper.sh &
+exec --no-startup-id ~/.config/backgrounds/scripts/set_random_wallpaper.sh &
 bindsym $mod+Shift+w exec --no-startup-id ~/.config/scripts/set_random_wallpaper.sh
 
 # inicia apps sozinhos
@@ -68,22 +68,42 @@ bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 5%-
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
 
-# start a terminal
+# Abre um terminal
 bindsym $mod+Return exec kitty
 
-# kill focused window
+# Mata a janela ativa
 bindsym $mod+Shift+q kill
 
-# start rofi (a program launcher)
-bindsym $mod+space exec --no-startup-id rofi -show drun
-bindsym $mod+d exec --no-startup-id rofi -show combi
-bindsym $mod+Tab exec --no-startup-id rofi -show window
+# lock by blurring the screen:
+bindsym $mod+l exec --no-startup-id ~/.config/i3/scripts/blur-lock
+# lock in case after sleep
+exec --no-startup-id xss-lock -l ~/.config/i3/scripts/blur-lock
 
-# change focus
-bindsym $mod+h focus left
-bindsym $mod+j focus down
-bindsym $mod+k focus up
-bindsym $mod+l focus right
+#####################################
+# Aplicativo de menu ROFI #
+#####################################
+
+bindsym $mod+space exec --no-startup-id rofi -modi drun -show drun \
+		-config ~/.config/rofi/rofidmenu.rasi
+
+#bindsym F9 exec --no-startup-id rofi -modi drun -show drun \
+#		-config ~/.config/rofi/rofidmenu.rasi
+
+## rofi bindings for window menu ($mod+t /F10 optional disabled)
+#bindsym $mod+t exec --no-startup-id rofi -show window \
+#		-config ~/.config/rofi/rofidmenu.rasi
+
+#bindsym F10 exec --no-startup-id rofi -show window \
+#		-config ~/.config/rofi/rofidmenu.rasi
+#############################################################################
+## rofi bindings to manage clipboard (install rofi-greenclip from the AUR) ##
+#############################################################################
+exec --no-startup-id /usr/bin/greenclip daemon
+#exec --no-startup-id greenclip daemon>/dev/null
+bindsym $mod+v exec --no-startup-id rofi -modi "clipboard:greenclip print" -show clipboard \
+		-config ~/.config/rofi/rofidmenu.rasi
+
+
 
 # alternatively, you can use the cursor keys:
 bindsym $mod+Left focus left
@@ -91,11 +111,6 @@ bindsym $mod+Down focus down
 bindsym $mod+Up focus up
 bindsym $mod+Right focus right
 
-# move focused window
-bindsym $mod+Shift+h move left
-bindsym $mod+Shift+j move down
-bindsym $mod+Shift+k move up
-bindsym $mod+Shift+l move right
 
 # alternatively, you can use the cursor keys:
 bindsym $mod+Shift+Left move left
@@ -179,10 +194,8 @@ bindsym $mod+Shift+r restart
 # exit i3 (logs you out of your X session)
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit i3' 'i3-msg exit'"
 
-# resize window (you can also use the mouse for that)
+# MODO DE RESIZE (MEXE NO TAMANHO DAS JANELAS)
 mode "resize" {
-    #exec --no-startup-id ~/.config/scripts/resize_status.sh resize
-
     # Redimensionamento
     bindsym j resize shrink width 10 px or 10 ppt
     bindsym k resize grow height 10 px or 10 ppt
@@ -195,16 +208,17 @@ mode "resize" {
     bindsym Right resize grow width 10 px or 10 ppt
 
     # Sair do modo resize com Enter, Escape ou Mod+r
-    bindsym Escape mode "default", exec --no-startup-id ~/.config/scripts/resize_status.sh default
-    bindsym Return mode "default", exec --no-startup-id ~/.config/scripts/resize_status.sh default
-    bindsym r mode "default", exec --no-startup-id ~/.config/scripts/resize_status.sh default
+    bindsym Escape mode "default", exec --no-startup-id ~/.config/polybar/scripts/resize_status.sh default
+    bindsym Return mode "default", exec --no-startup-id ~/.config/scripts/polybar/resize_status.sh default
+    bindsym r mode "default", exec --no-startup-id ~/.config/scripts/polybar/resize_status.sh default
 }
 
+
 # Ativar modo resize com Mod+r
-bindsym $mod+r mode "resize", exec --no-startup-id ~/.config/scripts/resize_status.sh resize
+bindsym $mod+r mode "resize", exec --no-startup-id ~/.config/polybar/scripts/resize_status.sh resize
 
 # Garante que a Polybar comece limpa
-exec --no-startup-id ~/.config/scripts/resize_status.sh default
+exec --no-startup-id ~/.config/polybar/scripts/resize_status.sh default
 
 # define algumas cores
 set $rosewater #f5e0dc
@@ -247,16 +261,9 @@ exec --no-startup-id numlockx on
 
 # seta as configs do teclado
 exec --no-startup-id  sleep 3 ; ~/.config/scripts/keyboard_config.sh
-#exec --no-startup-ip setxkbmap -layout us -variant intl -option
-
-# seta a janela do copyq como flutuante
-for_window [class="CopyQ"] floating enable
-
-# seta o mod + v como clipmanager
-bindsym $mod+v exec --no-startup-id copyq & copyq menu
 
 # seta o script para adicionar o resize na polybar
-exec_always --no-startup-id sleep 3 ; pkill -f "i3_mode_monitor.sh" ; ~/.config/scripts/i3_mode_monitor.sh &
+exec_always --no-startup-id sleep 3 ; pkill -f "i3_mode_monitor.sh" ; ~/.config/polybar/scripts/i3_mode_notify.sh &
 
 # seta os temas para dark
 exec_always --no-startup-id export GTK_THEME=Adwaita:dark
