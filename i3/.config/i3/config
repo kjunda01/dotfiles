@@ -74,10 +74,17 @@ bindsym $mod+Return exec kitty
 # Mata a janela ativa
 bindsym $mod+Shift+q kill
 
+# desativa o apagamento de tela
+exec --no-startup-id xset s off
+exec --no-startup-id xset -dpms
+exec --no-startup-id xset s noblank
+
 # lock by blurring the screen:
 bindsym $mod+l exec --no-startup-id ~/.config/i3/scripts/blur-lock
 # lock in case after sleep
 exec --no-startup-id xss-lock -l ~/.config/i3/scripts/blur-lock
+# configura um bloqueio de tela blur
+exec --no-startup-id xautolock -time 10 -locker ~/.config/i3/scripts/blur-lock 
 
 #####################################
 # Aplicativo de menu ROFI #
