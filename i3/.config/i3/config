@@ -33,7 +33,7 @@ exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 exec --no-startup-id xrandr --output DVI-D-0 --primary --pos 0x0 --output HDMI-A-1 --pos 1920x0
 
 # Configurações do teclado
-exec --no-startup-id sleep 3 ; ~/.config/polybar/scripts/keyboard_config.sh
+exec --no-startup-id ~/.config/polybar/scripts/keyboard_config.sh
 exec --no-startup-id numlockx on
 
 # Temas dark para GTK e QT
@@ -74,8 +74,9 @@ exec_always --no-startup-id sleep 3 ; pkill -f "i3_mode_monitor.sh" ; ~/.config/
 exec --no-startup-id dunst
 
 # Gerenciador de área de transferência
-exec --no-startup-id copyq
-exec --no-startup-id /usr/bin/greenclip daemon
+#exec --no-startup-id copyq
+#exec --no-startup-id /usr/bin/greenclip daemon &
+exec --no-startup-id ~/.config/i3/scripts/area_de_transf.sh &
 
 # Autostart
 exec --no-startup-id dex --autostart --environment i3
@@ -84,12 +85,14 @@ exec --no-startup-id dex --autostart --environment i3
 exec --no-startup-id nm-applet
 
 # Bloqueio de tela
-exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
-exec --no-startup-id xss-lock -l ~/.config/i3/scripts/blur-lock
-exec --no-startup-id xautolock -time 10 -locker ~/.config/i3/scripts/blur-lock
+#exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
+#exec --no-startup-id xss-lock -l ~/.config/i3/scripts/blur-lock
+#exec --no-startup-id xautolock -time 10 -locker ~/.config/i3/scripts/blur-lock
+#exec --no-startup-id xautolock -detectsleep -time 10 -locker ~/.config/i3/scripts/blur-lock
+
 
 # Script de notificação de login
-exec --no-startup-id sh -c "sleep 30 && . /mnt/disco1/ambiente/bin/activate && python3 /mnt/disco1/getInfos.py"
+exec --no-startup-id sh -c "sleep 60 && . /mnt/disco1/ambiente/bin/activate && python3 /mnt/disco1/getInfos.py"
 
 
 
@@ -106,7 +109,7 @@ exec --no-startup-id sh -c "sleep 30 && . /mnt/disco1/ambiente/bin/activate && p
 ##################################################
 # seta os wallpapers
 exec --no-startup-id ~/.config/backgrounds/scripts/set_random_wallpaper.sh &
-bindsym $mod+Shift+w exec --no-startup-id ~/.config/scripts/set_random_wallpaper.sh
+bindsym $mod+Shift+w exec ~/.config/backgrounds/scripts/set_random_wallpaper.sh &
 
 
 
@@ -131,8 +134,9 @@ bindsym $mod+Shift+q kill
 bindsym $mod+space exec --no-startup-id rofi -modi drun -show drun -config ~/.config/rofi/rofidmenu.rasi
 
 # Gerenciador de clipboard
-bindsym $mod+v exec --no-startup-id rofi -modi "clipboard:greenclip print" -show clipboard \
-		-config ~/.config/rofi/rofidmenu.rasi
+#bindsym $mod+v exec --no-startup-id rofi -modi "clipboard:greenclip print" -show clipboard \
+#		-config ~/.config/rofi/rofidmenu.rasi
+bindsym $mod+v exec --no-startup-id rofi -modi "clipboard:greenclip print" -show clipboard -config ~/.config/rofi/rofidmenu.rasi
 
 # Capturas de tela
 bindsym Shift+Print exec maim | copyq copy image/png - && copyq action "notify-send 'Screenshot' 'Tela inteira capturada!'"
@@ -159,7 +163,8 @@ bindsym $mod+Shift+c reload
 bindsym $mod+Shift+r restart
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit i3' 'i3-msg exit'"
 
-
+# Alterar o teclado para EN-INTERNATIONAL com script
+bindsym $mod+Shift+k exec --no-startup-id ~/.config/polybar/scripts/keyboard_config.sh &
 
 
 

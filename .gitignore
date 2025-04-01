@@ -3,3 +3,5 @@
 *.jpeg
 fonts/.local
 unsplash_key
+*.HEIC
+*.zip
