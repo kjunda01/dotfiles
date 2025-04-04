@@ -74,7 +74,7 @@ exec_always --no-startup-id sleep 3 ; pkill -f "i3_mode_monitor.sh" ; ~/.config/
 exec --no-startup-id dunst
 
 # Gerenciador de área de transferência
-#exec --no-startup-id copyq
+exec --no-startup-id copyq &
 #exec --no-startup-id /usr/bin/greenclip daemon &
 exec --no-startup-id ~/.config/i3/scripts/area_de_transf.sh &
 
@@ -108,7 +108,7 @@ exec --no-startup-id sh -c "sleep 60 && . /mnt/disco1/ambiente/bin/activate && p
 ## WALLPAPER                                    ##
 ##################################################
 # seta os wallpapers
-exec --no-startup-id ~/.config/backgrounds/scripts/set_random_wallpaper.sh &
+exec --no-startup-id sleep 4 ; ~/.config/backgrounds/scripts/set_random_wallpaper.sh &
 bindsym $mod+Shift+w exec ~/.config/backgrounds/scripts/set_random_wallpaper.sh &
 
 
