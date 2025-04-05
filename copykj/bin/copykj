@@ -1,194 +1,157 @@
 #!/bin/bash
 
-# Função para exibir mensagens coloridas
+MAX_PARALLEL=2
+
 function echo_color {
     local color="$1"
     shift
     echo -e "\e[${color}m$*\e[0m"
 }
 
-# Verifica se há pelo menos 2 argumentos (múltiplas origens + 1 destino)
+# Validação de argumentos
 if [ "$#" -lt 2 ]; then
     echo_color "31" "Uso: copykj <origem1> [origem2 ...] <destino>"
     exit 1
 fi
 
-# O último argumento é o destino
 DESTINO="${@: -1}"
-DESTINO="${DESTINO%/}"  # Remove barra final
+DESTINO="${DESTINO%/}"
 
-# Verifica se o destino é um diretório
 if [ ! -d "$DESTINO" ]; then
     echo_color "31" "Erro: O destino '$DESTINO' não é um diretório."
     exit 1
 fi
 
-# Verifica se os comandos necessários estão instalados
 for cmd in dd numfmt; do
     if ! command -v $cmd &> /dev/null; then
-        echo_color "31" "Erro: O comando '$cmd' não está instalado. Instale-o e tente novamente."
+        echo_color "31" "Erro: O comando '$cmd' não está instalado."
         exit 1
     fi
 done
 
-# Solicita senha de root antecipadamente para evitar prompt durante as cópias
-if sudo -v; then
-    echo_color "34" "Permissão sudo confirmada."
-else
-    echo_color "31" "Erro: Não foi possível obter permissão sudo."
-    exit 1
-fi
+sudo -v || { echo_color "31" "Permissão sudo não obtida."; exit 1; }
 
-# Função para copiar arquivos ou diretórios recursivamente
-copy_item() {
-    local ORIGEM="$1"
-    local DESTINO_DIR="$2"
-    ORIGEM="${ORIGEM%/}"
-
-    if [ -d "$ORIGEM" ]; then
-        echo_color "34" "Copiando diretório '$ORIGEM'..."
-        find "$ORIGEM" -type f | while read -r file; do
-            copy_file "$file" "$DESTINO_DIR"
-        done
-
-    elif [ -f "$ORIGEM" ]; then
-        copy_file "$ORIGEM" "$DESTINO_DIR"
-
-    elif [[ "$ORIGEM" == *"*"* ]]; then
-        echo_color "36" "Origem com curinga detectada: '$ORIGEM'"
-
-        IFS=$'\n' read -d '' -r -a ARQUIVOS <<< "$(eval ls -d $ORIGEM 2>/dev/null)"
-        if [ ${#ARQUIVOS[@]} -eq 0 ]; then
-            echo_color "31" "Nenhum arquivo ou diretório encontrado para '$ORIGEM'"
-            return 1
-        fi
-
-        echo_color "36" "Foram encontrados ${#ARQUIVOS[@]} itens."
-        read -p "Quantas cópias simultâneas deseja? (ex: 4 ou * para todas): " paralelismo
-
-        if [[ "$paralelismo" == "*" ]]; then
-            paralelismo="${#ARQUIVOS[@]}"
-            echo_color "36" "Usando $paralelismo cópias paralelas (1 por item)."
-        elif ! [[ "$paralelismo" =~ ^[0-9]+$ ]] || [ "$paralelismo" -le 0 ]; then
-            echo_color "31" "Valor inválido. Usando 1 cópia paralela por padrão."
-            paralelismo=1
-        fi
-
-        export -f copy_file echo_color
-        printf "%s\n" "${ARQUIVOS[@]}" | xargs -n 1 -P "$paralelismo" -I{} bash -c '
-            if [ -d "$0" ]; then
-                find "$0" -type f | while read -r f; do copy_file "$f" "$1"; done
-            elif [ -f "$0" ]; then
-                copy_file "$0" "$1"
-            else
-                echo_color "31" "Item não encontrado: $0"
-            fi
-        ' {} "$DESTINO_DIR"
-
-    else
-        echo_color "31" "Erro: '$ORIGEM' não existe."
-    fi
-}
-
-# Função para copiar um único arquivo com barra de progresso
+# Função que copia com barra estilo pacman
 copy_file() {
     local ORIGEM="$1"
     local DESTINO_DIR="$2"
+    local INDEX="$3"
+    local TOTAL="$4"
+
     local DESTINO_ARQUIVO="$DESTINO_DIR/$(basename "$ORIGEM")"
+    local TAMANHO=$(stat --format="%s" "$ORIGEM" 2>/dev/null || echo 0)
+    local FILENAME=$(basename "$ORIGEM")
 
-    if [ ! -w "$DESTINO_DIR" ]; then
-        echo_color "31" "Erro: Sem permissão para escrever em '$DESTINO_DIR'. Tente executar como root."
-        exit 1
-    fi
-
-    if [ -e "$DESTINO_ARQUIVO" ]; then
-        echo_color "33" "Atenção: O arquivo '$DESTINO_ARQUIVO' já existe!"
-        echo -n "Deseja sobrescrevê-lo? (y/N): "
-        read -r resposta
-        case "$resposta" in
-            [Yy]*) echo_color "33" "Sobrescrevendo..." ;;
-            *) echo_color "31" "Cópia cancelada."; return 1 ;;
-        esac
-    fi
-
-    TAMANHO=$(stat --format="%s" "$ORIGEM")
-    TAMANHO_HUMANO=$(numfmt --to=iec-i --suffix=B $TAMANHO)
-    echo_color "32" "Copiando '$ORIGEM' ($TAMANHO_HUMANO)..."
-
-    START_TIME=$(date +%s)
-    BYTES_COPIED=0
+    local START_TIME=$(date +%s)
+    local BYTES_COPIED=0
 
     sudo dd if="$ORIGEM" of="$DESTINO_ARQUIVO" bs=4M oflag=direct status=none &
-    DD_PID=$!
+    local DD_PID=$!
+
+    # Constantes fixas
+    local BAR_WIDTH=76
 
     while kill -0 $DD_PID 2>/dev/null; do
-        sleep 1
+        sleep 0.2
         BYTES_COPIED=$(stat --format="%s" "$DESTINO_ARQUIVO" 2>/dev/null || echo 0)
-        PERCENTAGE=$(( BYTES_COPIED * 100 / TAMANHO ))
-        ELAPSED_TIME=$(( $(date +%s) - START_TIME ))
 
-        if [ $ELAPSED_TIME -gt 0 ]; then
-            SPEED=$(( BYTES_COPIED / ELAPSED_TIME ))
-            SPEED_HUMANO=$(numfmt --to=iec-i --suffix=B $SPEED)
-        else
-            SPEED_HUMANO="0B/s"
+        local PERCENTAGE=0
+        if [[ "$TAMANHO" -gt 0 ]]; then
+            PERCENTAGE=$(( BYTES_COPIED * 100 / TAMANHO ))
         fi
 
-        COPIED_HUMANO=$(numfmt --to=iec-i --suffix=B $BYTES_COPIED)
+        local FILLED=$(( BAR_WIDTH * PERCENTAGE / 100 ))
+        local EMPTY=$(( BAR_WIDTH - FILLED ))
+        local BAR="$(printf '%*s' "$FILLED" '' | tr ' ' '#')"
+        BAR+="$(printf '%*s' "$EMPTY" '' | tr ' ' '-')"
 
-        if [ $PERCENTAGE -le 25 ]; then
-            COLOR="31"
-        elif [ $PERCENTAGE -le 50 ]; then
-            COLOR="35"
-        elif [ $PERCENTAGE -le 75 ]; then
-            COLOR="33"
-        else
-            COLOR="32"
+        local NOW=$(numfmt --to=iec-i --suffix=B "$BYTES_COPIED")
+        local SPEED=$(( BYTES_COPIED / (($(date +%s) - START_TIME + 1)) ))
+        local SPEED_HUMAN=$(numfmt --to=iec-i --suffix=B "$SPEED")
+
+        local ELAPSED=$(( $(date +%s) - START_TIME ))
+        local TIME_FMT=$(printf "%02d:%02d" $((ELAPSED / 60)) $((ELAPSED % 60)))
+
+        local INFO="$(printf "%10s %10s %6s [%-*s] %3d%%" \
+            "$NOW" "$SPEED_HUMAN" "$TIME_FMT" "$BAR_WIDTH" "$BAR" "$PERCENTAGE")"
+
+        local TERM_WIDTH=$(tput cols)
+        local INFO_LEN=${#INFO}
+        local SPACE_AVAILABLE=$(( TERM_WIDTH - INFO_LEN - 1 ))
+
+        # Parte esquerda com índice + nome
+        local PREFIX="$(printf "(%3d/%3d) - " "$INDEX" "$TOTAL")"
+        local FILENAME_DISPLAY="$FILENAME"
+        local MAX_LEFT=$(( SPACE_AVAILABLE - ${#PREFIX} ))
+
+        if [[ ${#FILENAME_DISPLAY} -gt $MAX_LEFT ]]; then
+            FILENAME_DISPLAY="${FILENAME_DISPLAY:0:$((MAX_LEFT - 3))}..."
         fi
 
-        BAR_LENGTH=50
-        FILLED_LENGTH=$(( BAR_LENGTH * PERCENTAGE / 100 ))
-        UNFILLED_LENGTH=$(( BAR_LENGTH - FILLED_LENGTH ))
-        PROGRESS_BAR=$(printf "%${FILLED_LENGTH}s" | tr ' ' '#')
-        PROGRESS_BAR+=$(printf "%${UNFILLED_LENGTH}s" | tr ' ' '-')
-
-        echo -ne "Progresso: $COPIED_HUMANO / $TAMANHO_HUMANO - $PERCENTAGE% - $SPEED_HUMANO - [\e[${COLOR}m$PROGRESS_BAR\e[0m]\r"
+        printf "\r%s%-*s %s" "$PREFIX" "$MAX_LEFT" "$FILENAME_DISPLAY" "$INFO"
     done
 
     wait $DD_PID
-    ELAPSED_TIME=$(( $(date +%s) - START_TIME ))
-    echo -e "\n====================="
-    echo_color "32" "Cópia concluída em ${ELAPSED_TIME}s!"
+
+    local FINAL_ELAPSED=$(( $(date +%s) - START_TIME ))
+    local TIME_FMT_FINAL=$(printf "%02d:%02d" $((FINAL_ELAPSED / 60)) $((FINAL_ELAPSED % 60)))
+    local FINAL_SIZE=$(stat --format="%s" "$DESTINO_ARQUIVO" 2>/dev/null || echo 0)
+    local FINAL_HUMAN=$(numfmt --to=iec-i --suffix=B "$FINAL_SIZE")
+    local FINAL_BAR="$(printf '%*s' $BAR_WIDTH '' | tr ' ' '#')"
+    local FINAL_INFO="$(printf "%10s %10s %6s [%-*s] 100%%" \
+        "$FINAL_HUMAN" "$SPEED_HUMAN" "$TIME_FMT_FINAL" "$BAR_WIDTH" "$FINAL_BAR")"
+
+    local TERM_WIDTH=$(tput cols)
+    local INFO_LEN=${#FINAL_INFO}
+    local SPACE_AVAILABLE=$(( TERM_WIDTH - INFO_LEN - 1 ))
+
+    local PREFIX_FINAL="$(printf "(%3d/%3d) - " "$INDEX" "$TOTAL")"
+    local MAX_LEFT=$(( SPACE_AVAILABLE - ${#PREFIX_FINAL} ))
+
+    if [[ ${#FILENAME} -gt $MAX_LEFT ]]; then
+        FILENAME_DISPLAY="${FILENAME:0:$((MAX_LEFT - 3))}..."
+    else
+        FILENAME_DISPLAY="$FILENAME"
+    fi
+
+    printf "\r%s%-*s %s\n" "$PREFIX_FINAL" "$MAX_LEFT" "$FILENAME_DISPLAY" "$FINAL_INFO"
 }
 
-# Itera sobre todos os argumentos, exceto o último (destino)
+
+# Prepara origens
 ORIGENS=("${@:1:$(($#-1))}")
+TOTAL=${#ORIGENS[@]}
 
-if [ ${#ORIGENS[@]} -gt 3 ]; then
-    echo_color "36" "Detectado múltiplos arquivos (${#ORIGENS[@]})."
-    echo -n "Deseja usar cópia paralela? (y/N): "
-    read -r resposta
-    if [[ "$resposta" =~ ^[Yy]$ ]]; then
-        echo -n "Quantas cópias simultâneas deseja executar? (ex: 4 ou * para todas): "
-        read -r paralelismo
+export -f copy_file echo_color
+export DESTINO
 
-        if [[ "$paralelismo" == "*" ]]; then
-            paralelismo="${#ORIGENS[@]}"
-            echo_color "36" "Usando $paralelismo cópias paralelas (1 por arquivo)."
-        elif ! [[ "$paralelismo" =~ ^[0-9]+$ ]] || [ "$paralelismo" -le 0 ]; then
-            echo_color "31" "Valor inválido. Usando 1 cópia paralela por padrão."
-            paralelismo=1
-        fi
-
-        export -f copy_file echo_color
-        printf "%s\n" "${ORIGENS[@]}" | xargs -n 1 -P "$paralelismo" -I{} bash -c 'copy_file "$1" "'$DESTINO'"' _ "{}"
-
-        echo_color "32" "Todas as cópias paralelas foram concluídas."
-        exit 0
-    fi
-fi
-
-# Caso não use paralelismo, segue normal
-for ORIGEM in "${ORIGENS[@]}"; do
-    copy_item "$ORIGEM" "$DESTINO"
+# Cálculo do total de bytes
+TOTAL_BYTES=0
+for f in "${ORIGENS[@]}"; do
+    SIZE=$(stat --format="%s" "$f" 2>/dev/null || echo 0)
+    TOTAL_BYTES=$((TOTAL_BYTES + SIZE))
 done
+
+export TOTAL_BYTES
+
+# Paralelismo fixo com semáforo
+sem_limite() {
+    local -n FILES=$1
+    local TOTAL=$2
+
+    pids=()
+    slot=0
+
+    for i in "${!FILES[@]}"; do
+        while [ "$(jobs -rp | wc -l)" -ge $MAX_PARALLEL ]; do
+            wait -n
+        done
+        copy_file "${FILES[$i]}" "$DESTINO" "$((i+1))" "$TOTAL" &
+    done
+
+    wait
+}
+
+sem_limite ORIGENS "$TOTAL"
+
+
