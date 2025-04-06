@@ -1,2 +1,27 @@
-#
-sudo pacman -Sy scrot imagemagick i3lock xautolock samba git nano gvim wget curl openssh rofi polybar bluez bluez-utils numlockx systemd galculator
+#!/bin/bash
+
+# Lista de pacotes para instalar
+packages=(
+    scrot
+    imagemagick
+    i3lock
+    samba
+    git
+    nano
+    gvim
+    wget
+    curl
+    openssh
+    rofi
+    polybar
+    bluez
+    bluez-utils
+    numlockx
+    systemd
+    galculator
+    ethtool
+    rsync
+)
+
+# Instala os pacotes com pacman
+sudo pacman -Sy "${packages[@]}"
