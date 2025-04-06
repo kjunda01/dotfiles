@@ -5,6 +5,7 @@ packages=(
     scrot
     imagemagick
     i3lock
+    pv
     samba
     git
     nano
