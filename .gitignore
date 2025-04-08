@@ -1,7 +1,7 @@
-*.png
-*.jpg
-*.jpeg
+*.[pP][nN][gG]
+*.[jJ][pP][eE][gG]
+*.[jJ][pP][gG]
+*.[hH][eE][iI][cC]
+*.zip
 fonts/.local
 unsplash_key
-*.HEIC
-*.zip
