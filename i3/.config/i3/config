@@ -74,7 +74,8 @@ exec_always --no-startup-id sleep 3 ; pkill -f "i3_mode_monitor.sh" ; ~/.config/
 exec --no-startup-id dunst
 
 # Gerenciador de área de transferência
-exec --no-startup-id copyq &
+exec --no-startup-id copyq 
+
 #exec --no-startup-id /usr/bin/greenclip daemon &
 exec --no-startup-id ~/.config/i3/scripts/area_de_transf.sh &
 
@@ -83,6 +84,7 @@ exec --no-startup-id dex --autostart --environment i3
 
 # Rede
 exec --no-startup-id nm-applet
+exec --no-startup-id sleep 3 ; ~/.config/i3/scripts/set_network_gigabit.sh &
 
 # Bloqueio de tela
 #exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
@@ -139,9 +141,18 @@ bindsym $mod+space exec --no-startup-id rofi -modi drun -show drun -config ~/.co
 bindsym $mod+v exec --no-startup-id rofi -modi "clipboard:greenclip print" -show clipboard -config ~/.config/rofi/rofidmenu.rasi
 
 # Capturas de tela
-bindsym Shift+Print exec maim | copyq copy image/png - && copyq action "notify-send 'Screenshot' 'Tela inteira capturada!'"
-bindsym $mod+Print exec maim --window $(xdotool getactivewindow) | copyq copy image/png - && copyq action "notify-send 'Screenshot' 'Janela ativa capturada!'"
-bindsym Print exec maim --select | copyq copy image/png - && copyq action "notify-send 'Screenshot' 'Área selecionada capturada!'"
+# Tela inteira
+bindsym Shift+Print exec --no-startup-id ~/.config/i3/scripts/screenshots.sh full
+
+# Janela ativa
+bindsym $mod+Print exec --no-startup-id ~/.config/i3/scripts/screenshots.sh window
+
+# Área selecionada
+bindsym Print exec --no-startup-id ~/.config/i3/scripts/screenshots.sh select
+
+#bindsym Shift+Print exec maim | copyq copy image/png - && copyq action "notify-send 'Screenshot' 'Tela inteira capturada!'"
+#bindsym $mod+Print exec maim --window $(xdotool getactivewindow) | copyq copy image/png - && copyq action "notify-send 'Screenshot' 'Janela ativa capturada!'"
+#bindsym Print exec maim --select | copyq copy image/png - && copyq action "notify-send 'Screenshot' 'Área selecionada capturada!'"
 
 # Controle de áudio e brilho
 set $refresh_i3status killall -SIGUSR1 i3status
