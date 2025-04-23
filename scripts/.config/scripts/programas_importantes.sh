@@ -22,6 +22,8 @@ packages=(
     galculator
     ethtool
     rsync
+    thunar-archive-plugin
+    engrampa
 )
 
 # Instala os pacotes com pacman
